@@ -20,8 +20,13 @@
     "posttest": "npm run lint"
   },
   "devDependencies": {
+    "@types/node": "^22.7.5",
+    "dotenv": "^16.4.5",
     "gts": "^6.0.2",
-    "typescript": "^5.6.3",
-    "@types/node": "^22.7.5"
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@solana/web3.js": "1"
   }
 }

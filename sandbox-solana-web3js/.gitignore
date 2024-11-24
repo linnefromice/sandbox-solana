@@ -148,4 +148,5 @@ dist
 *.vsix
 
 # Custom
+.env
 build/
