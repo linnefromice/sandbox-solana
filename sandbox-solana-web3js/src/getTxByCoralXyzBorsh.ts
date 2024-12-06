@@ -5,28 +5,22 @@ BigInt.prototype["toJSON"] = function () {
   return this.toString();
 };
 
-const schemaSwapBaseInput = borsh.struct([
+const schema = borsh.struct([
+  borsh.u8("discriminator"),
   borsh.u64("amountIn"),
   borsh.u64("minimumAmountOut"),
 ]);
 
 const main = async () => {
-  // https://solana.fm/tx/3VZCqk372X55cfwaavSy85AqvgiLyb8RUc4uJbbgowuhDixP3RyTUGAzJ1kigMouVYBuJs3HU9GFdd7PyGw1nJhE?cluster=mainnet-alpha
-  const data = "E73fXHPWvSR4YydNXLVmFCz61YzYYYsh1";
+  // solscan.io/tx/58MvMBdd21ynUfEf7No2adBGqyqVR9axMKPRoJ1fMZDnKt6aLUJ9Ev7eRE9w1Jp9tEnFEyD5yQwNoNC8A8VpeqHv // 1.6
+  const data = "66U3R4Yr2dvgigUqnkjRKqR";
   const dataBuffer = Buffer.from(bs58.decode(data));
-  const res = schemaSwapBaseInput.decode(dataBuffer);
+  const res = schema.decode(dataBuffer);
+  // -> Succeeded
   console.dir({
+    discriminator: res.discriminator.toString(),
     amountIn: res.amountIn.toString(),
     minimumAmountOut: res.minimumAmountOut.toString(),
-  });
-
-  // https://solana.fm/tx/3TZR1jg6dQmgx8376LpnebaRUiGjUvGwYiHVYAWE3eBgZ92aFarRbtjAbdYn9TevLnfAXRcib7m5Be2G5WSgzkbK?cluster=mainnet-alpha
-  const data2 = "E73fXHPWvSRKYwxM2Akmy7GVPYMTvxTfM";
-  const dataBuffer2 = Buffer.from(bs58.decode(data2));
-  const res2 = schemaSwapBaseInput.decode(dataBuffer2);
-  console.dir({
-    amountIn: res2.amountIn.toString(),
-    minimumAmountOut: res2.minimumAmountOut.toString(),
   });
 };
 
