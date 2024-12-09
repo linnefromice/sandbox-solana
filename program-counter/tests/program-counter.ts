@@ -83,7 +83,6 @@ describe("program-counter", () => {
     // Generate a unique keypair for each executor
     const executorKeypair = anchor.web3.Keypair.generate();
     const otherExecutorKeypair = anchor.web3.Keypair.generate();
-    const notInitializedExecutorKeypair = anchor.web3.Keypair.generate();
 
     before(async () => {
       await program.methods
@@ -124,15 +123,11 @@ describe("program-counter", () => {
       assert(notExecutorStats.addCount.toNumber() == 0)
       assert(notExecutorStats.subCount.toNumber() == 0)
     })
-    it("fail if not initialized", async () => {
-      // todo
-    })
   })
   describe("sub", async () => {
     // Generate a unique keypair for each executor
     const executorKeypair = anchor.web3.Keypair.generate();
     const otherExecutorKeypair = anchor.web3.Keypair.generate();
-    const notInitializedExecutorKeypair = anchor.web3.Keypair.generate();
 
     before(async () => {
       await program.methods
@@ -151,13 +146,36 @@ describe("program-counter", () => {
         })
         .signers([otherExecutorKeypair])
         .rpc();
+      
+      await program.methods.add({
+        count: new BN(10),
+        value: new BN(10)
+      }).accounts({ executor: executorKeypair.publicKey }).rpc()
+      await program.methods.add({
+        count: new BN(10),
+        value: new BN(10)
+      }).accounts({ executor: otherExecutorKeypair.publicKey }).rpc()
     })
 
     it("sub for executor state, other state is not subed", async () => {
-      // todo
-    })
-    it("fail if not initialized", async () => {
-      // todo
+      await program.methods.sub({
+        count: new BN(8),
+        value: new BN(5)
+      }).accounts({ executor: executorKeypair.publicKey }).rpc()
+
+      const executorStats = await program.account.accountStats.fetch(
+        executorKeypair.publicKey
+      );
+      assert(executorStats.total.toNumber() == 60)
+      assert(executorStats.addCount.toNumber() == 10)
+      assert(executorStats.subCount.toNumber() == 8)
+
+      const notExecutorStats = await program.account.accountStats.fetch(
+        otherExecutorKeypair.publicKey
+      );
+      assert(notExecutorStats.total.toNumber() == 100)
+      assert(notExecutorStats.addCount.toNumber() == 10)
+      assert(notExecutorStats.subCount.toNumber() == 0)
     })
   })
 });

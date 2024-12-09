@@ -23,7 +23,7 @@ pub mod program_counter {
 
     pub fn sub(ctx: Context<Sub>, data: SubData) -> Result<()> {
         let SubData { value, count } = data;
-        ctx.accounts.executor.add_count -= count;
+        ctx.accounts.executor.sub_count += count;
         ctx.accounts.executor.total -= value * count;
         Ok(())
     }
