@@ -15,10 +15,16 @@ pub mod program_counter {
     }
 
     pub fn add(ctx: Context<Add>, data: AddData) -> Result<()> {
+        let AddData { value, count } = data;
+        ctx.accounts.executor.add_count += count;
+        ctx.accounts.executor.total += value * count;
         Ok(())
     }
 
     pub fn sub(ctx: Context<Sub>, data: SubData) -> Result<()> {
+        let SubData { value, count } = data;
+        ctx.accounts.executor.add_count -= count;
+        ctx.accounts.executor.total -= value * count;
         Ok(())
     }
 }
