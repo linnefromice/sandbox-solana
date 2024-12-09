@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { ProgramCounter } from "../target/types/program_counter";
 import { assert } from 'chai';
+import { BN } from "bn.js";
 
 describe("program-counter", () => {
   // Configure the client to use the local cluster.
@@ -10,10 +11,6 @@ describe("program-counter", () => {
   const program = anchor.workspace.ProgramCounter as Program<ProgramCounter>;
   const provider = anchor.AnchorProvider.env();
   const user = provider.wallet;
-
-  // Generate a unique keypair for each executor
-  const notInitializedExecutorKeypair = anchor.web3.Keypair.generate();
-  const otherExecutorKeypair = anchor.web3.Keypair.generate();
 
   describe("initialize", () => {    
     it("success", async () => {
@@ -83,11 +80,84 @@ describe("program-counter", () => {
     });
   })
   describe("add", () => {
-    it("add for executor state, other state is not added", async () => {})
-    it("fail if not initialized", async () => {})
+    // Generate a unique keypair for each executor
+    const executorKeypair = anchor.web3.Keypair.generate();
+    const otherExecutorKeypair = anchor.web3.Keypair.generate();
+    const notInitializedExecutorKeypair = anchor.web3.Keypair.generate();
+
+    before(async () => {
+      await program.methods
+        .initialize()
+        .accounts({
+          executor: executorKeypair.publicKey,
+          signer: user.publicKey
+        })
+        .signers([executorKeypair])
+        .rpc();
+      await program.methods
+        .initialize()
+        .accounts({
+          executor: otherExecutorKeypair.publicKey,
+          signer: user.publicKey
+        })
+        .signers([otherExecutorKeypair])
+        .rpc();
+    })
+
+    it("add for executor state, other state is not added", async () => {
+      await program.methods.add({
+        count: new BN(5),
+        value: new BN(3)
+      }).accounts({ executor: executorKeypair.publicKey }).rpc()
+
+      const executorStats = await program.account.accountStats.fetch(
+        executorKeypair.publicKey
+      );
+      assert(executorStats.total.toNumber() == 15)
+      assert(executorStats.addCount.toNumber() == 5)
+      assert(executorStats.subCount.toNumber() == 0)
+
+      const notExecutorStats = await program.account.accountStats.fetch(
+        otherExecutorKeypair.publicKey
+      );
+      assert(notExecutorStats.total.toNumber() == 0)
+      assert(notExecutorStats.addCount.toNumber() == 0)
+      assert(notExecutorStats.subCount.toNumber() == 0)
+    })
+    it("fail if not initialized", async () => {
+      // todo
+    })
   })
   describe("sub", async () => {
-    it("sub for executor state, other state is not subed", async () => {})
-    it("fail if not initialized", async () => {})
+    // Generate a unique keypair for each executor
+    const executorKeypair = anchor.web3.Keypair.generate();
+    const otherExecutorKeypair = anchor.web3.Keypair.generate();
+    const notInitializedExecutorKeypair = anchor.web3.Keypair.generate();
+
+    before(async () => {
+      await program.methods
+        .initialize()
+        .accounts({
+          executor: executorKeypair.publicKey,
+          signer: user.publicKey
+        })
+        .signers([executorKeypair])
+        .rpc();
+      await program.methods
+        .initialize()
+        .accounts({
+          executor: otherExecutorKeypair.publicKey,
+          signer: user.publicKey
+        })
+        .signers([otherExecutorKeypair])
+        .rpc();
+    })
+
+    it("sub for executor state, other state is not subed", async () => {
+      // todo
+    })
+    it("fail if not initialized", async () => {
+      // todo
+    })
   })
 });
