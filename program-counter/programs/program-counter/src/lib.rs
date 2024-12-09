@@ -14,25 +14,25 @@ pub mod program_counter {
         Ok(())
     }
 
-    // pub fn add(ctx: &Context<AddContext>, data: AddData) -> Result<()> {
-    //     todo!()
-    // }
+    pub fn add(ctx: Context<Add>, data: AddData) -> Result<()> {
+        Ok(())
+    }
 
-    // pub fn sub(ctx: &Context<SubContext>, data: SubData) -> Result<()> {
-    //     todo!()
-    // }
+    pub fn sub(ctx: Context<Sub>, data: SubData) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(
         init,
-        payer = user,
+        payer = signer,
         space = 8 + AccountStats::MAX_SIZE,
     )]
     pub executor: Account<'info, AccountStats>, // アカウントを初期化
     #[account(mut)]
-    pub user: Signer<'info>, // ユーザーの署名者
+    pub signer: Signer<'info>, // ユーザーの署名者
     pub system_program: Program<'info, System>, // 必須のシステムプログラム
 }
 
@@ -48,32 +48,24 @@ impl AccountStats {
     pub const MAX_SIZE: usize = 8 + 8 + 8;
 }
 
-// #[derive(Accounts)]
-// pub struct AddContext<'info> {
-//     #[account(mut)]
-//     pub executor: ProgramAccount<'info, AccountStats>,
-//     #[account(mut)]
-//     pub user: Signer<'info>, // ユーザー署名
-// }
+#[derive(Accounts)]
+pub struct Add<'info> {
+    #[account(mut)]
+    pub executor: Account<'info, AccountStats>,
+}
+#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
+pub struct AddData {
+    pub value: u64,
+    pub count: u64
+}
 
-// #[derive(Accounts)]
-// pub struct SubContext<'info> {
-//     #[account(mut)]
-//     pub executor: ProgramAccount<'info, AccountStats>,
-//     #[account(mut)]
-//     pub user: Signer<'info>, // ユーザー署名
-// }
-
-
-// #[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
-// pub struct AddData {
-//     pub value: u64
-//     pub count: u64
-// }
-
-// #[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
-// pub struct SubData {
-//     pub value: u64
-//     pub count: u64
-// }
-
+#[derive(Accounts)]
+pub struct Sub<'info> {
+    #[account(mut)]
+    pub executor: Account<'info, AccountStats>,
+}
+#[derive(AnchorSerialize, AnchorDeserialize, Eq, PartialEq, Clone, Copy, Debug)]
+pub struct SubData {
+    pub value: u64,
+    pub count: u64
+}
