@@ -10,7 +10,7 @@ pub mod program_global_counter {
 
     pub fn init_program(ctx: Context<InitializeProgram>) -> Result<()> {
         let global_state = &mut ctx.accounts.global_state;
-        global_state.total = 0;
+        global_state.total = 500; // 0; // initial value
         global_state.add_count = 0;
         global_state.sub_count = 0;
         Ok(())
