@@ -18,13 +18,49 @@ pub mod program_sol {
         Ok(())
     }
 
-    pub fn deposit(ctx: Context<Deposit>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
+    pub fn deposit(ctx: Context<DepositOrWithdraw>, amount: u64) -> Result<()> {
+        let user_account = &mut ctx.accounts.executor;
+        let bank_account = &mut ctx.accounts.back;
+
+        let inst = anchor_lang::solana_program::system_instruction::transfer(
+            &user_account.key(),
+            &bank_account.key(),
+            amount,
+        );
+        anchor_lang::solana_program::program::invoke(
+            &inst,
+            &[
+                user_account.to_account_info(),
+                bank_account.to_account_info(),
+            ],
+        )?;
+
+        user_account.total_amount += amount;
+        bank_account.total_amount += amount;
+
         Ok(())
     }
 
-    pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
+    pub fn withdraw(ctx: Context<DepositOrWithdraw>, amount: u64) -> Result<()> {
+        let user_account = &mut ctx.accounts.executor;
+        let bank_account = &mut ctx.accounts.back;
+
+        let inst = anchor_lang::solana_program::system_instruction::transfer(
+            &bank_account.key(),
+            &user_account.key(),
+            amount,
+        );
+        anchor_lang::solana_program::program::invoke(
+            &inst,
+            &[
+                bank_account.to_account_info(),
+                user_account.to_account_info(),
+            ],
+        )?;
+
+        user_account.total_amount -= amount;
+        bank_account.total_amount -= amount;
+
         Ok(())
     }
 }
@@ -74,7 +110,9 @@ pub struct InitializeUser<'info> {
 }
 
 #[derive(Accounts)]
-pub struct Deposit {}
-
-#[derive(Accounts)]
-pub struct Withdraw {}
+pub struct DepositOrWithdraw<'info> {
+    #[account(mut)]
+    pub executor: Account<'info, UserStats>,
+    #[account(mut, seeds = [], bump)]
+    pub back: Account<'info, Bank>,
+}
