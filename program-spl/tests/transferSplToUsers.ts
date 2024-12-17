@@ -11,10 +11,9 @@ import {
 import { assert } from "chai";
 import { BN } from "bn.js";
 
-describe("transfer_spl_to_user", () => {
+describe("native-transfer", () => {
   const provider = anchor.AnchorProvider.env();
   const connection = provider.connection;
-  const wallet = provider.wallet;
   const mintKeypair = anchor.web3.Keypair.generate();
   const fromKeypair = anchor.web3.Keypair.generate();
   const toKeypair = anchor.web3.Keypair.generate();
@@ -23,9 +22,9 @@ describe("transfer_spl_to_user", () => {
   //   commitment: "confirmed",
   // });
 
-  const program = anchor.workspace.ProgramSpl as Program<ProgramSpl>;
+  // const program = anchor.workspace.ProgramSpl as Program<ProgramSpl>;
 
-  it("transfer_to_user", async () => {
+  it("native-transfer", async () => {
     console.log(`execute: .requestAirdrop`);
     const mintAccountAirdropSignature = await connection.requestAirdrop(
       mintKeypair.publicKey,
