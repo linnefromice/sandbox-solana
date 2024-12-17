@@ -133,7 +133,7 @@ describe("program-spl-2", () => {
     // .deposit
     const depositAmtUSDC = 2 * Math.pow(10, decimals);
     await program.methods
-      .deposit(new anchor.BN(depositAmtUSDC))
+      .depositToken(new anchor.BN(depositAmtUSDC))
       .accounts({
         mintAccount: USDC,
         signer: user1Keypair.publicKey,
@@ -143,7 +143,7 @@ describe("program-spl-2", () => {
       .rpc();
     const depositAmtDAI = 3 * Math.pow(10, decimals);
     await program.methods
-      .deposit(new anchor.BN(depositAmtDAI))
+      .depositToken(new anchor.BN(depositAmtDAI))
       .accounts({
         mintAccount: DAI,
         signer: user2Keypair.publicKey,
@@ -152,10 +152,28 @@ describe("program-spl-2", () => {
       .signers([user2Keypair])
       .rpc();
 
+    const [user1DepositStatePda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), user1Keypair.publicKey.toBuffer(), USDC.toBuffer()],
+      program.programId
+    );
+    const [user2DepositStatePda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("user"), user2Keypair.publicKey.toBuffer(), DAI.toBuffer()],
+      program.programId
+    );
+
     const rootStateUSDC = await program.account.rootState.fetch(rootUSDCPda);
     assert(rootStateUSDC.totalAmount.toNumber() == depositAmtUSDC);
     const rootStateDAI = await program.account.rootState.fetch(rootDAIPda);
     assert(rootStateDAI.totalAmount.toNumber() == depositAmtDAI);
+    const user1State = await program.account.depositState.fetch(
+      user1DepositStatePda
+    );
+    assert(user1State.totalAmount.toNumber() == depositAmtUSDC);
+    const user2State = await program.account.depositState.fetch(
+      user2DepositStatePda
+    );
+    assert(user2State.totalAmount.toNumber() == depositAmtDAI);
+
     assert.equal(
       (
         await SPL.getAccount(provider.connection, user1USDC_TA)

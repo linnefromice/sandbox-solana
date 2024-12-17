@@ -9,3 +9,11 @@ pub struct RootState {
 impl RootState {
     pub const MAX_SIZE: usize = 8 + 8 + 32;
 }
+
+#[account]
+pub struct DepositState {
+    pub total_amount: u64,
+}
+impl DepositState {
+    pub const MAX_SIZE: usize = 8 + 8;
+}
