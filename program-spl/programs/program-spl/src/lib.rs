@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
 declare_id!("8yYTuH1jM6dJhUt2UrYkiiAn5XpZ7op9x2oZD3zXSBGm");
 
@@ -36,9 +36,23 @@ pub struct Hello {}
 #[derive(Accounts)]
 pub struct TransferSplToUser<'info> {
     pub from: Signer<'info>,
-    #[account(mut)]
+    pub to: SystemAccount<'info>,
+    #[account(
+        mut,
+        constraint = mint_account.key() == from_ata.mint
+    )]
+    pub mint_account: Account<'info, Mint>,
+    #[account(
+        mut,
+        constraint = from_ata.owner == from.key(),
+        constraint = from_ata.mint == mint_account.key()
+    )]
     pub from_ata: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = to_ata.owner == to.key(),
+        constraint = to_ata.mint == mint_account.key()
+    )]
     pub to_ata: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
