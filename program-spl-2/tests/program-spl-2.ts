@@ -20,7 +20,9 @@ describe("program-spl-2", () => {
 
   it("test", async () => {
     // prepare
+    console.log(`prepare`);
     //// airdrop
+    console.log(`> execute: .requestAirdrop`);
     const airdropSigs = await Promise.all(
       [
         ownerKeypair,
@@ -41,7 +43,7 @@ describe("program-spl-2", () => {
 
     // Generate Mint Token
     const decimals = 6;
-    console.log(`execute: .createMint`);
+    console.log(`> execute: .createMint`);
     const USDC = await SPL.createMint(
       provider.connection,
       mintUSDCKeypair,
@@ -56,6 +58,7 @@ describe("program-spl-2", () => {
       null,
       decimals
     );
+    console.log(`> execute: .createAccount`);
     const user1USDC_TA = await SPL.createAccount(
       provider.connection,
       user1Keypair,
@@ -68,6 +71,7 @@ describe("program-spl-2", () => {
       DAI,
       user2Keypair.publicKey
     );
+    console.log(`> execute: SPLToken.mintTo`);
     await SPL.mintTo(
       provider.connection,
       mintUSDCKeypair,
@@ -98,6 +102,7 @@ describe("program-spl-2", () => {
     );
 
     // .initialize_token
+    console.log(`.initialize_token`);
     await program.methods
       .initializeToken()
       .accounts({
@@ -135,6 +140,7 @@ describe("program-spl-2", () => {
     ); // Check if account exists
 
     // .deposit_token
+    console.log(`.deposit_token`);
     const depositAmtUSDC = 2 * Math.pow(10, decimals);
     await program.methods
       .depositToken(new anchor.BN(depositAmtUSDC))
@@ -204,6 +210,7 @@ describe("program-spl-2", () => {
     );
 
     // .initialize_sol
+    console.log(`.initialize_sol`);
     await program.methods
       .initializeSol()
       .accounts({
@@ -223,6 +230,7 @@ describe("program-spl-2", () => {
     );
 
     // .transfer_sol
+    console.log(`.transfer_sol`);
     const amtSol = 3 * LAMPORTS_PER_SOL;
     const _rootAccountInfo = await provider.connection.getAccountInfo(
       rootSolPda
