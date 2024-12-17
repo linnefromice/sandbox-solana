@@ -93,9 +93,9 @@ describe("program-spl-2", () => {
       (5 * Math.pow(10, decimals)).toString()
     );
 
-    // .init
+    // .initialize
     await program.methods
-      .init()
+      .initialize()
       .accounts({
         mintAccount: USDC,
         signer: ownerKeypair.publicKey,
@@ -106,10 +106,14 @@ describe("program-spl-2", () => {
       [Buffer.from("root"), USDC.toBuffer()],
       program.programId
     );
-    assert(await program.account.rootState.fetch(rootUSDCPda)); // Check if account exists
+    assert(
+      (
+        await program.account.rootState.fetch(rootUSDCPda)
+      ).totalAmount.toNumber() == 0
+    ); // Check if account exists
 
     await program.methods
-      .init()
+      .initialize()
       .accounts({
         mintAccount: DAI,
         signer: ownerKeypair.publicKey,
@@ -120,6 +124,10 @@ describe("program-spl-2", () => {
       [Buffer.from("root"), DAI.toBuffer()],
       program.programId
     );
-    assert(await program.account.rootState.fetch(rootDAIPda)); // Check if account exists
+    assert(
+      (
+        await program.account.rootState.fetch(rootDAIPda)
+      ).totalAmount.toNumber() == 0
+    ); // Check if account exists
   });
 });
