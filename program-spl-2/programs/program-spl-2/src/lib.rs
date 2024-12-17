@@ -1,6 +1,6 @@
 #![allow(clippy::result_large_err)]
 
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program};
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -15,8 +15,16 @@ declare_id!("DqQyM9cNFC48XKtkGHvAV5VAWCPLqrM2ZDukGn8RedhX");
 pub mod program_spl_2 {
     use super::*;
 
-    pub fn initialize(ctx: Context<InitializeToken>) -> Result<()> {
-        execute_init(ctx)
+    pub fn initialize_sol(ctx: Context<InitializeSOL>) -> Result<()> {
+        execute_initialize_sol(ctx)
+    }
+
+    pub fn initialize_token(ctx: Context<InitializeToken>) -> Result<()> {
+        execute_initialize_token(ctx)
+    }
+
+    pub fn deposit_sol(ctx: Context<DepositSOL>, amount: u64) -> Result<()> {
+        execute_deposit_sol(ctx, amount)
     }
 
     pub fn deposit_token(ctx: Context<DepositToken>, amount: u64) -> Result<()> {
@@ -24,7 +32,26 @@ pub mod program_spl_2 {
     }
 }
 
-pub fn execute_init(ctx: Context<InitializeToken>) -> Result<()> {
+pub fn execute_initialize_sol(_ctx: Context<InitializeSOL>) -> Result<()> {
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct InitializeSOL<'info> {
+    #[account(
+        init,
+        payer = signer,
+        space = 8 + RootState::MAX_SIZE,
+        seeds = [b"root-sol"],
+        bump
+    )]
+    pub root_state: Account<'info, RootState>,
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+pub fn execute_initialize_token(ctx: Context<InitializeToken>) -> Result<()> {
     ctx.accounts.root_state.authority = ctx.accounts.vault.key();
     Ok(())
 }
@@ -56,6 +83,47 @@ pub struct InitializeToken<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+}
+
+pub fn execute_deposit_sol(ctx: Context<DepositSOL>, amount: u64) -> Result<()> {
+    let system_program = ctx.accounts.system_program.to_account_info();
+    let signer = &mut ctx.accounts.signer;
+    let root_state = &mut ctx.accounts.root_state;
+
+    let cpi_accounts = system_program::Transfer {
+        from: signer.to_account_info(),
+        to: root_state.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new(system_program, cpi_accounts);
+    system_program::transfer(cpi_ctx, amount)?;
+
+    ctx.accounts.root_state.total_amount += amount;
+    ctx.accounts.user_state.total_amount += amount;
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct DepositSOL<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    #[account(
+        init_if_needed, 
+        payer = signer, 
+        space = DepositState::MAX_SIZE, 
+        seeds = [b"user", signer.key().as_ref(), b"sol"],
+        bump
+    )]
+    pub user_state: Account<'info, DepositState>,
+
+    #[account(
+        mut,
+        seeds = [b"root-sol"],
+        bump
+    )]
+    pub root_state: Account<'info, RootState>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn execute_deposit_token(ctx: Context<DepositToken>, amount: u64) -> Result<()> {

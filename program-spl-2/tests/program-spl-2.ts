@@ -4,6 +4,7 @@ import { ProgramSpl2 } from "../target/types/program_spl_2";
 import * as SPL from "@solana/spl-token";
 import { assert } from "chai";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { BN } from "bn.js";
 
 describe("program-spl-2", () => {
   const provider = anchor.AnchorProvider.env();
@@ -28,7 +29,10 @@ describe("program-spl-2", () => {
         user1Keypair,
         user2Keypair,
       ].map((keypair) =>
-        provider.connection.requestAirdrop(keypair.publicKey, LAMPORTS_PER_SOL)
+        provider.connection.requestAirdrop(
+          keypair.publicKey,
+          10 * LAMPORTS_PER_SOL
+        )
       )
     );
     await Promise.all(
@@ -93,9 +97,9 @@ describe("program-spl-2", () => {
       (5 * Math.pow(10, decimals)).toString()
     );
 
-    // .initialize
+    // .initialize_token
     await program.methods
-      .initialize()
+      .initializeToken()
       .accounts({
         mintAccount: USDC,
         signer: ownerKeypair.publicKey,
@@ -113,7 +117,7 @@ describe("program-spl-2", () => {
     ); // Check if account exists
 
     await program.methods
-      .initialize()
+      .initializeToken()
       .accounts({
         mintAccount: DAI,
         signer: ownerKeypair.publicKey,
@@ -130,7 +134,7 @@ describe("program-spl-2", () => {
       ).totalAmount.toNumber() == 0
     ); // Check if account exists
 
-    // .deposit
+    // .deposit_token
     const depositAmtUSDC = 2 * Math.pow(10, decimals);
     await program.methods
       .depositToken(new anchor.BN(depositAmtUSDC))
@@ -198,5 +202,64 @@ describe("program-spl-2", () => {
       ).amount.toString(),
       depositAmtDAI.toString()
     );
+
+    // .initialize_sol
+    await program.methods
+      .initializeSol()
+      .accounts({
+        signer: ownerKeypair.publicKey,
+      })
+      .signers([ownerKeypair])
+      .rpc();
+
+    const [rootSolPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("root-sol")],
+      program.programId
+    );
+    assert(
+      (
+        await program.account.rootState.fetch(rootSolPda)
+      ).totalAmount.toNumber() == 0
+    );
+
+    // .transfer_sol
+    const amtSol = 3 * LAMPORTS_PER_SOL;
+    const _rootAccountInfo = await provider.connection.getAccountInfo(
+      rootSolPda
+    );
+    const beforeSolInRoot = _rootAccountInfo.lamports;
+    const _user1AccountInfo = await provider.connection.getAccountInfo(
+      user1Keypair.publicKey
+    );
+    const beforeSolInUser1 = _user1AccountInfo.lamports;
+    await program.methods
+      .depositSol(new BN(amtSol))
+      .accounts({
+        signer: user1Keypair.publicKey,
+      })
+      .signers([user1Keypair])
+      .rpc();
+    const [user1SolPda] = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("user"),
+        user1Keypair.publicKey.toBuffer(),
+        Buffer.from("sol"),
+      ],
+      program.programId
+    );
+    const user1SolState = await program.account.depositState.fetch(user1SolPda);
+    assert(user1SolState.totalAmount.toNumber() == amtSol);
+    const rootAccountInfo = await provider.connection.getAccountInfo(
+      rootSolPda
+    );
+    const afterSolInRoot = rootAccountInfo.lamports;
+    const user1AccountInfo = await provider.connection.getAccountInfo(
+      user1Keypair.publicKey
+    );
+    const afterSolInUser1 = user1AccountInfo.lamports;
+    assert(afterSolInRoot - beforeSolInRoot == amtSol);
+    // consider the fee
+    assert(beforeSolInUser1 - afterSolInUser1 > amtSol);
+    assert(beforeSolInUser1 - afterSolInUser1 < amtSol * 1.001);
   });
 });
