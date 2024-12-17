@@ -20,10 +20,16 @@ describe("sample", () => {
     const parsedTx = await program.provider.connection.getTransaction(tx, {
       commitment: "confirmed",
     });
-    console.dir(parsedTx, { depth: null });
+    // console.dir(parsedTx, { depth: null });
     const returnData = (parsedTx.meta as any).returnData.data as string[];
     const decoded = Buffer.from(base64.decode(returnData[0]));
-    assert.equal(decoded.toString(), "Hello,world!");
+    console.log(decoded);
+    console.log(decoded.toString());
+    const actualData = decoded.subarray(4);
+    console.log(actualData);
+    console.log(actualData.toString());
+    assert.equal(actualData.toString(), "Hello,world!");
+    // assert.equal(decoded.toString(), "Hello,world!");
     // AssertionError: expected '\f\u0000\u0000\u0000Hello,world!' to equal 'Hello,world!'
   });
 });
