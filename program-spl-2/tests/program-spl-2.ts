@@ -129,5 +129,38 @@ describe("program-spl-2", () => {
         await program.account.rootState.fetch(rootDAIPda)
       ).totalAmount.toNumber() == 0
     ); // Check if account exists
+
+    // .deposit
+    await program.methods
+      .deposit(new anchor.BN(2 * Math.pow(10, decimals)))
+      .accounts({
+        mintAccount: USDC,
+        signer: user1Keypair.publicKey,
+        signerAta: user1USDC_TA,
+      })
+      .signers([user1Keypair])
+      .rpc();
+    await program.methods
+      .deposit(new anchor.BN(3 * Math.pow(10, decimals)))
+      .accounts({
+        mintAccount: DAI,
+        signer: user2Keypair.publicKey,
+        signerAta: user2DAI_TA,
+      })
+      .signers([user2Keypair])
+      .rpc();
+
+    assert(
+      (
+        await program.account.rootState.fetch(rootUSDCPda)
+      ).totalAmount.toNumber() ==
+        2 * Math.pow(10, decimals)
+    );
+    assert(
+      (
+        await program.account.rootState.fetch(rootDAIPda)
+      ).totalAmount.toNumber() ==
+        3 * Math.pow(10, decimals)
+    );
   });
 });

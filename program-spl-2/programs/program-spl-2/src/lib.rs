@@ -62,7 +62,7 @@ pub fn execute_deposit(ctx: Context<DepositToken>, amount: u64) -> Result<()> {
     let cpi_accounts = Transfer {
         from: ctx.accounts.signer_ata.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
-        authority: ctx.accounts.root_state.to_account_info(),
+        authority: ctx.accounts.signer.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
     transfer(cpi_ctx, amount)?;
@@ -79,8 +79,8 @@ pub struct DepositToken<'info> {
     pub mint_account: Account<'info, Mint>,
     #[account(
         mut,
-        associated_token::mint = mint_account,
-        associated_token::authority = signer
+        // associated_token::mint = mint_account,
+        // associated_token::authority = signer
     )]
     pub signer_ata: Account<'info, TokenAccount>,
 
