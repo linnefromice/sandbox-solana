@@ -14,8 +14,8 @@ pub mod program_spl {
     }
 
     pub fn transfer_to_user(ctx: Context<TransferSplToUser>, amount: u64) -> Result<()> {
-        let dst = &ctx.accounts.to_ata;
-        let src = &ctx.accounts.from_ata;
+        let dst = &ctx.accounts.to_token_account;
+        let src = &ctx.accounts.from_token_account;
         let token_program = &ctx.accounts.token_program;
         let authority = &ctx.accounts.from;
         let cpi_accounts = token::Transfer {
@@ -36,23 +36,33 @@ pub struct Hello {}
 #[derive(Accounts)]
 pub struct TransferSplToUser<'info> {
     pub from: Signer<'info>,
-    pub to: SystemAccount<'info>,
-    #[account(
-        mut,
-        constraint = mint_account.key() == from_ata.mint
-    )]
-    pub mint_account: Account<'info, Mint>,
-    #[account(
-        mut,
-        constraint = from_ata.owner == from.key(),
-        constraint = from_ata.mint == mint_account.key()
-    )]
-    pub from_ata: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        constraint = to_ata.owner == to.key(),
-        constraint = to_ata.mint == mint_account.key()
-    )]
-    pub to_ata: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub from_token_account: Account<'info, TokenAccount>,
+    pub to_token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
+
+// NOTE: for AssociatedTokenAccount (incomplete)
+// #[derive(Accounts)]
+// pub struct TransferSplToUser<'info> {
+//     pub from: Signer<'info>,
+//     pub to: SystemAccount<'info>,
+//     #[account(
+//         mut,
+//         constraint = mint_account.key() == from_ata.mint
+//     )]
+//     pub mint_account: Account<'info, Mint>,
+//     #[account(
+//         mut,
+//         constraint = from_ata.owner == from.key(),
+//         constraint = from_ata.mint == mint_account.key()
+//     )]
+//     pub from_ata: Account<'info, TokenAccount>,
+//     #[account(
+//         mut,
+//         constraint = to_ata.owner == to.key(),
+//         constraint = to_ata.mint == mint_account.key()
+//     )]
+//     pub to_ata: Account<'info, TokenAccount>,
+//     pub token_program: Program<'info, Token>,
+// }

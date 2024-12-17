@@ -12,17 +12,25 @@ import { assert } from "chai";
 import { BN } from "bn.js";
 
 describe("transfer_spl_to_user", () => {
+  const provider = anchor.AnchorProvider.env();
+  const connection = provider.connection;
+  const wallet = provider.wallet;
+  const mintKeypair = anchor.web3.Keypair.generate();
   const fromKeypair = anchor.web3.Keypair.generate();
-  const fromWallet = new anchor.Wallet(fromKeypair);
   const toKeypair = anchor.web3.Keypair.generate();
-  const connection = anchor.AnchorProvider.env().connection;
-  const provider = new anchor.AnchorProvider(connection, fromWallet, {
-    commitment: "confirmed",
-  });
+
+  // const provider = new anchor.AnchorProvider(connection, fromWallet, {
+  //   commitment: "confirmed",
+  // });
 
   const program = anchor.workspace.ProgramSpl as Program<ProgramSpl>;
 
   it("transfer_to_user", async () => {
+    console.log(`execute: .requestAirdrop`);
+    const mintAccountAirdropSignature = await connection.requestAirdrop(
+      mintKeypair.publicKey,
+      LAMPORTS_PER_SOL
+    );
     const fromAirdropSignature = await connection.requestAirdrop(
       fromKeypair.publicKey,
       LAMPORTS_PER_SOL
@@ -32,6 +40,10 @@ describe("transfer_spl_to_user", () => {
       LAMPORTS_PER_SOL
     );
     // Wait for airdrop confirmation
+    await connection.confirmTransaction({
+      signature: mintAccountAirdropSignature,
+      ...(await connection.getLatestBlockhash()),
+    });
     await connection.confirmTransaction({
       signature: fromAirdropSignature,
       ...(await connection.getLatestBlockhash()),
@@ -43,63 +55,80 @@ describe("transfer_spl_to_user", () => {
 
     // initialize
     const decimals = 8;
+    console.log(`execute: .createMint`);
     const mintAccount = await SPL.createMint(
-      provider.connection,
-      fromKeypair,
-      fromKeypair.publicKey,
+      connection,
+      mintKeypair,
+      mintKeypair.publicKey,
       null,
       decimals
     );
 
-    const fromTokenAccountPK = await SPL.createAssociatedTokenAccount(
+    console.log(`execute: .createAccount for from`);
+    const fromTokenAccount = await SPL.createAccount(
       connection,
       fromKeypair,
       mintAccount,
-      fromWallet.publicKey
+      fromKeypair.publicKey
     );
-    console.log(`fromTokenAccount: ${fromTokenAccountPK}`);
-    const toTokenAccountPK = await SPL.createAssociatedTokenAccount(
+    console.log(`execute: .createAccount for to`);
+    const toTokenAccount = await SPL.createAccount(
       connection,
       toKeypair,
       mintAccount,
       toKeypair.publicKey
     );
-    console.log(`toTokenAccount: ${toTokenAccountPK}`);
 
-    const fromTokenAccountAddress = await SPL.getAssociatedTokenAddress(
-      mintAccount,
-      fromKeypair.publicKey
-    );
-    console.log(`fromTokenAccountAddress:`);
-    console.dir(fromTokenAccountAddress, { depth: null });
-    const toTokenAccountAddress = await SPL.getAssociatedTokenAddress(
-      mintAccount,
-      toKeypair.publicKey
-    );
-    console.log(`toTokenAccountAddress:`);
-    console.dir(toTokenAccountAddress, { depth: null });
+    // NOTE: associated token account
+    // console.log(`execute: .createAssociatedTokenAccount`);
+    // const fromTokenAccountPK = await SPL.createAssociatedTokenAccount(
+    //   connection,
+    //   fromKeypair,
+    //   mintAccount,
+    //   wallet.publicKey
+    // );
+    // console.log(`fromTokenAccount: ${fromTokenAccountPK}`);
+    // const toTokenAccountPK = await SPL.createAssociatedTokenAccount(
+    //   connection,
+    //   toKeypair,
+    //   mintAccount,
+    //   toKeypair.publicKey
+    // );
+    // console.log(`toTokenAccount: ${toTokenAccountPK}`);
+    // const fromTokenAccountAddress = await SPL.getAssociatedTokenAddress(
+    //   mintAccount,
+    //   fromKeypair.publicKey
+    // );
+    // console.log(`fromTokenAccountAddress:`);
+    // console.dir(fromTokenAccountAddress, { depth: null });
+    // const toTokenAccountAddress = await SPL.getAssociatedTokenAddress(
+    //   mintAccount,
+    //   toKeypair.publicKey
+    // );
+    // console.log(`toTokenAccountAddress:`);
+    // console.dir(toTokenAccountAddress, { depth: null });
+
+    console.log(`execute: .mintTo for from`);
     await SPL.mintTo(
-      provider.connection,
-      fromKeypair,
+      connection,
+      mintKeypair,
       mintAccount,
-      fromTokenAccountAddress,
-      fromKeypair.publicKey,
+      fromTokenAccount,
+      mintKeypair,
       3 * Math.pow(10, decimals)
     );
+    console.log(`execute: .mintTo for to`);
     await SPL.mintTo(
-      provider.connection,
-      fromKeypair,
+      connection,
+      mintKeypair,
       mintAccount,
-      toTokenAccountAddress,
-      fromKeypair.publicKey,
+      toTokenAccount,
+      mintKeypair,
       5 * Math.pow(10, decimals)
     );
 
-    const fromAccount = await SPL.getAccount(
-      connection,
-      fromTokenAccountAddress
-    );
-    const toAccount = await SPL.getAccount(connection, toTokenAccountAddress);
+    const fromAccount = await SPL.getAccount(connection, fromTokenAccount);
+    const toAccount = await SPL.getAccount(connection, toTokenAccount);
     assert.equal(
       fromAccount.amount.toString(),
       (3 * Math.pow(10, decimals)).toString()
@@ -109,30 +138,48 @@ describe("transfer_spl_to_user", () => {
       (5 * Math.pow(10, decimals)).toString()
     );
 
-    console.log(`execute: .transferToUser`);
     const amount = 2 * Math.pow(10, decimals);
-    const sig = await program.methods
-      .transferToUser(new BN(amount))
-      .accounts({
-        from: fromWallet.publicKey,
-        to: toKeypair.publicKey,
-        fromAta: fromTokenAccountAddress,
-        toAta: toTokenAccountAddress,
-        mintAccount: mintAccount,
-      })
-      .rpc();
-    console.log(`execute: confirm tx for .transferToUser`);
-    await connection.confirmTransaction({
-      signature: sig,
-      ...(await connection.getLatestBlockhash()),
-    });
+    console.log(`execute: .transferToUser`);
 
-    const _fromAccount = await SPL.getAccount(
+    await SPL.transfer(
       connection,
-      fromTokenAccountAddress
+      fromKeypair,
+      fromTokenAccount,
+      toTokenAccount,
+      fromKeypair,
+      amount
     );
-    console.dir(_fromAccount, { depth: null });
-    const _toAccount = await SPL.getAccount(connection, toTokenAccountAddress);
-    console.dir(_toAccount, { depth: null });
+
+    // NOTE: .transferToUser (not working)
+    // const args = {
+    //   from: fromKeypair.publicKey,
+    //   fromTokenAccount: fromTokenAccount,
+    //   toTokenAccount: toTokenAccount,
+    //   // from: fromKeypair.publicKey,
+    //   // to: toKeypair.publicKey,
+    //   // mintAccount: mintAccount,
+    // };
+    // console.dir(args);
+    // const sig = await program.methods
+    //   .transferToUser(new BN(amount))
+    //   .accounts(args)
+    //   .signers([fromKeypair])
+    //   .rpc();
+    // console.log(`execute: confirm tx for .transferToUser`);
+    // await connection.confirmTransaction({
+    //   signature: sig,
+    //   ...(await connection.getLatestBlockhash()),
+    // });
+
+    const _fromAccount = await SPL.getAccount(connection, fromTokenAccount);
+    const _toAccount = await SPL.getAccount(connection, toTokenAccount);
+    assert.equal(
+      _fromAccount.amount.toString(),
+      ((3 - 2) * Math.pow(10, decimals)).toString()
+    );
+    assert.equal(
+      _toAccount.amount.toString(),
+      ((5 + 2) * Math.pow(10, decimals)).toString()
+    );
   });
 });
