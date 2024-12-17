@@ -131,8 +131,9 @@ describe("program-spl-2", () => {
     ); // Check if account exists
 
     // .deposit
+    const depositAmtUSDC = 2 * Math.pow(10, decimals);
     await program.methods
-      .deposit(new anchor.BN(2 * Math.pow(10, decimals)))
+      .deposit(new anchor.BN(depositAmtUSDC))
       .accounts({
         mintAccount: USDC,
         signer: user1Keypair.publicKey,
@@ -140,8 +141,9 @@ describe("program-spl-2", () => {
       })
       .signers([user1Keypair])
       .rpc();
+    const depositAmtDAI = 3 * Math.pow(10, decimals);
     await program.methods
-      .deposit(new anchor.BN(3 * Math.pow(10, decimals)))
+      .deposit(new anchor.BN(depositAmtDAI))
       .accounts({
         mintAccount: DAI,
         signer: user2Keypair.publicKey,
@@ -153,14 +155,37 @@ describe("program-spl-2", () => {
     assert(
       (
         await program.account.rootState.fetch(rootUSDCPda)
-      ).totalAmount.toNumber() ==
-        2 * Math.pow(10, decimals)
+      ).totalAmount.toNumber() == depositAmtUSDC
     );
     assert(
       (
         await program.account.rootState.fetch(rootDAIPda)
-      ).totalAmount.toNumber() ==
-        3 * Math.pow(10, decimals)
+      ).totalAmount.toNumber() == depositAmtDAI
     );
+    assert.equal(
+      (
+        await SPL.getAccount(provider.connection, user1USDC_TA)
+      ).amount.toString(),
+      (3 * Math.pow(10, decimals) - depositAmtUSDC).toString()
+    );
+    assert.equal(
+      (
+        await SPL.getAccount(provider.connection, user2DAI_TA)
+      ).amount.toString(),
+      (5 * Math.pow(10, decimals) - depositAmtDAI).toString()
+    );
+    // todo
+    // const rootTA_USDC = await SPL.getAssociatedTokenAddress(USDC, rootUSDCPda);
+    // const rootTA_DAI = await SPL.getAssociatedTokenAddress(DAI, rootDAIPda);
+    // assert.equal(
+    //   (
+    //     await SPL.getAccount(provider.connection, rootTA_USDC)
+    //   ).amount.toString(),
+    //   depositAmtUSDC.toString()
+    // );
+    // assert.equal(
+    //   (await SPL.getAccount(provider.connection, rootTA_DAI)).amount.toString(),
+    //   depositAmtDAI.toString()
+    // );
   });
 });
