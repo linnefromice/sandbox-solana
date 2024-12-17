@@ -152,16 +152,10 @@ describe("program-spl-2", () => {
       .signers([user2Keypair])
       .rpc();
 
-    assert(
-      (
-        await program.account.rootState.fetch(rootUSDCPda)
-      ).totalAmount.toNumber() == depositAmtUSDC
-    );
-    assert(
-      (
-        await program.account.rootState.fetch(rootDAIPda)
-      ).totalAmount.toNumber() == depositAmtDAI
-    );
+    const rootStateUSDC = await program.account.rootState.fetch(rootUSDCPda);
+    assert(rootStateUSDC.totalAmount.toNumber() == depositAmtUSDC);
+    const rootStateDAI = await program.account.rootState.fetch(rootDAIPda);
+    assert(rootStateDAI.totalAmount.toNumber() == depositAmtDAI);
     assert.equal(
       (
         await SPL.getAccount(provider.connection, user1USDC_TA)
@@ -174,18 +168,17 @@ describe("program-spl-2", () => {
       ).amount.toString(),
       (5 * Math.pow(10, decimals) - depositAmtDAI).toString()
     );
-    // todo
-    // const rootTA_USDC = await SPL.getAssociatedTokenAddress(USDC, rootUSDCPda);
-    // const rootTA_DAI = await SPL.getAssociatedTokenAddress(DAI, rootDAIPda);
-    // assert.equal(
-    //   (
-    //     await SPL.getAccount(provider.connection, rootTA_USDC)
-    //   ).amount.toString(),
-    //   depositAmtUSDC.toString()
-    // );
-    // assert.equal(
-    //   (await SPL.getAccount(provider.connection, rootTA_DAI)).amount.toString(),
-    //   depositAmtDAI.toString()
-    // );
+    assert.equal(
+      (
+        await SPL.getAccount(provider.connection, rootStateUSDC.authority)
+      ).amount.toString(),
+      depositAmtUSDC.toString()
+    );
+    assert.equal(
+      (
+        await SPL.getAccount(provider.connection, rootStateDAI.authority)
+      ).amount.toString(),
+      depositAmtDAI.toString()
+    );
   });
 });

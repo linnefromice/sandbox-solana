@@ -24,7 +24,8 @@ pub mod program_spl_2 {
     }
 }
 
-pub fn execute_init(_ctx: Context<InitializeToken>) -> Result<()> {
+pub fn execute_init(ctx: Context<InitializeToken>) -> Result<()> {
+    ctx.accounts.root_state.authority = ctx.accounts.vault.key();
     Ok(())
 }
 
